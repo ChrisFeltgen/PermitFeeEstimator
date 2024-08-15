@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permit Fee Estimator</title>
+    <link href="https://www.pompanobeachfl.gov/pompanobeachfl/assets/css/01_modules/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .results {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        .tab {
+            display: none;
+        }
+
+        .tab.active {
+            display: block;
+        }
+
+        .calculation-line {
+            font-style: italic;
+        }
+
+        .total-line {
+            font-weight: bold;
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+        }
+
+        .card {
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            background-color: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container mt-4" style="width:650px">
+        <h1 class="text-center mb-4">Permit Fee Estimator</h1>
+        <div id="GeneralInstructions" class="text-center mb-4">
+            <p>Please select which Division you would like to estimate your Permit fees for, and then select the Permit type for that Division.</p>
+        </div>
+        <div class="d-flex justify-content-center mb-4">
+            <div class="btn-group" role="group" style="width:650px">
+                <button class="btn btn-primary" onclick="showTab('building')">Building Division</button>
+                <button class="btn btn-primary" onclick="showTab('engineering')">Engineering</button>
+                <button class="btn btn-primary" onclick="showTab('fire')">Fire Prevention</button>
+                <button class="btn btn-primary" onclick="showTab('landscape')">Landscape</button>
+                <button class="btn btn-primary" onclick="showTab('zoning')">Zoning</button>
+            </div>
+        </div>
+
+        <div id="building" class="tab active">
+            <div class="card">
+                <div class="card-header">Building Permit Fees</div>
+                <div class="card-body">
+                    <div id="buildingInstructions" class="text-center mb-3">
+                        <strong>NOTE:</strong> <i>Building permit fees for each category (Building, Electrical, Mechanical, and Plumbing) must be calculated individually. Please avoid using the total job cost when estimating permit fees; instead, estimate fees for each permit type separately.</i>
+                    </div>
+                    <form id="buildingPermitForm" onsubmit="calculateBuildingFee(); return false;">
+                        <div class="mb-3">
+                            <label for="buildingPermitType" class="form-label">Building Permit Type:</label>
+                            <select id="buildingPermitType" name="buildingPermitType" class="form-select">
+                                <option value="general">Building, Electrical, Mechanical, or Plumbing (General)</option>
+                                <option value="acFurnaceChangeOut">A/C and Furnace Change Out (Commercial)</option>
+                                <option value="acChangeOut">A/C Change Out (Residential)</option>
+                                <option value="foundationOnly">Foundation Only Permit</option>
+                                <option value="photovoltaic">Photovoltaic System</option>
+                                <option value="roofing">Roofing</option>
+                                <option value="temporaryTent">Temporary Tent</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="buildingGeneralDetails">
+                            <label for="buildingProjectValue" class="form-label mt-2">Job Value ($):</label>
+                            <input type="number" id="buildingProjectValue" name="buildingProjectValue" class="form-control" min="0" placeholder="0">
+                        </div>
+                        <div class="mb-3" id="FoudationDetails">
+                            <label for="foundationSQFT" class="form-label mt-2">Foundation SQ FT:</label>
+                            <input type="number" id="foundationSQFT" name="foundationSQFT" class="form-control" min="0" placeholder="0">
+                        </div>
+                        <div class="mb-3" id="buildingTentDetails">
+							<label for="buildingTentValue" class="form-label mt-2">Job Value ($):</label>
+                            <input type="number" id="buildingTentValue" name="buildingTentValue" class="form-control" min="0" placeholder="0">
+							<label for="buildingTentSize" class="form-label mt-2">Tent Size (sq. ft.):</label>
+                            <input type="number" id="buildingTentSize" name="buildingTentSize" class="form-control" min="0" placeholder="0">
+                            <label for="buildingTentCount" class="form-label mt-2">Number of Tents:</label>
+                            <input type="number" id="buildingTentCount" name="buildingTentCount" class="form-control" min="1" value="1">
+                        </div>
+                        <div class="mb-3" id="buildingPhotovoltaicDetails">
+                            <label for="buildingPhotovoltaicValue" class="form-label mt-2">Job Value ($):</label>
+                            <input type="number" id="buildingPhotovoltaicValue" name="buildingPhotovoltaicValue" class="form-control" min="0" placeholder="0">
+                            <label for="buildingSystemSize" class="form-label mt-2">System Size (kW):</label>
+                            <input type="number" id="buildingSystemSize" name="buildingSystemSize" class="form-control" min="0" placeholder="0">
+                        </div>
+                        <div class="mb-3" id="buildingACDetails">
+						    <label for="buildingACValue" class="form-label mt-2">Job Value ($):</label>
+                            <input type="number" id="buildingACValue" name="buildingACValue" class="form-control" min="0" placeholder="0">
+                            <label for="buildingACTons" class="form-label mt-2">A/C System Size (tons):</label>
+                            <input type="number" id="buildingACTons" name="buildingACTons" class="form-control" min="0" placeholder="0">
+                        </div>
+                        <div class="mb-3" id="buildingRoofingDetails">
+                            <label for="buildingRoofingValue" class="form-label mt-2">Roofing Job Value ($):</label>
+                            <input type="number" id="buildingRoofingValue" name="buildingRoofingValue" class="form-control" min="0" placeholder="0">
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">Calculate Fee</button>
+                    </form>
+                    <div class="results mt-3" id="buildingResults"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="engineering" class="tab">
+            <div class="card">
+                <div class="card-header">Engineering Permit Fees</div>
+                <div class="card-body">
+                    <form id="engineeringPermitForm" onsubmit="calculateEngineeringFee(); return false;">
+                        <div class="mb-3">
+                            <label for="engineeringPermitType" class="form-label">Engineering Permit Type:</label>
+                            <select id="engineeringPermitType" name="engineeringPermitType" class="form-select">
+                                <option value="paving">Paving</option>
+                                <option value="seawalls">Seawalls, Docks, Groins, Waterfront Structures, and Dredging</option>
+                                <option value="stormSewers">Storm Sewers</option>
+                                <option value="waterSewer">Water Distribution and Sewerage Systems</option>
+                                <option value="establishingGrades">Establishing Grades</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="engineeringCostDetails">
+                            <label for="engineeringProjectValue" class="form-label">Job Value ($):</label>
+                            <input type="number" id="engineeringProjectValue" name="engineeringProjectValue" class="form-control" min="0" placeholder="0">
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">Calculate Fee</button>
+                    </form>
+                    <div class="results mt-3" id="engineeringResults"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="fire" class="tab">
+            <div class="card">
+                <div class="card-header">Fire Prevention Permit Fees</div>
+                <div class="card-body">
+                    <form id="firePermitForm" onsubmit="calculateFireFee(); return false;">
+                        <div class="mb-3">
+                            <label for="firePermitType" class="form-label">Fire Permit Type:</label>
+                            <select id="firePermitType" name="firePermitType" class="form-select">
+                                <option value="construction">New Construction, Additions, Alterations</option>
+                                <option value="systems">Fire Alarm, Sprinkler, Standpipe Systems</option>
+                                <option value="capacity">Capacity-based Permits</option>
+                                <option value="miscellaneous">Miscellaneous Permits</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="fireCostDetails">
+                            <label for="fireProjectValue" class="form-label">Job Value ($):</label>
+                            <input type="number" id="fireProjectValue" name="fireProjectValue" class="form-control" min="0" placeholder="0">
+                        </div>
+                        <div class="mb-3" id="fireCapacityDetails">
+                            <label for="fireCapacityPercent" class="form-label">Capacity (%):</label>
+                            <input type="number" id="fireCapacityPercent" name="fireCapacityPercent" class="form-control" min="0" placeholder="0">
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">Calculate Fee</button>
+                    </form>
+                    <div class="results mt-3" id="fireResults"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="landscape" class=" tab">
+            <div class="card">
+                <div class="card-header">Landscape Permit Fees</div>
+                <div class="card-body">
+                    <form id="landscapePermitForm" onsubmit="calculateLandscapeFee(); return false;">
+                        <div class="mb-3">
+                            <label for="landscapePermitType" class="form-label">Landscape Permit Type:</label>
+                            <select id="landscapePermitType" name="landscapePermitType" class="form-select">
+                                <option value="treePermit">Tree Permit</option>
+                                <option value="treeAbuse">Tree Abuse</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="landscapeTreePermitDetails">
+                            <label for="landscapeTreeType" class="form-label">Property Type:</label>
+                            <select id="landscapeTreeType" name="landscapeTreeType" class="form-select">
+                                <option value="singleFamily">Single-Family and Duplex</option>
+                                <option value="multiFamily">Multi-Family Residential</option>
+                                <option value="nonResidential">Non-Residential</option>
+                            </select>
+                            <label for="landscapeTreeCount" class="form-label mt-2">Number of Trees:</label>
+                            <input type="number" id="landscapeTreeCount" name="landscapeTreeCount" class="form-control" min="0" placeholder="0">
+                        </div>
+                        <div class="mb-3" id="landscapeTreeAbuseDetails">
+                            <label for="landscapeTreeAbuseCount" class="form-label">Number of Abused Trees:</label>
+                            <input type="number" id="landscapeTreeAbuseCount" name="landscapeTreeAbuseCount" class="form-control" min="0" placeholder="0">
+                            <label for="landscapeTreeAbuseIncident" class="form-label mt-2">Incident Number:</label>
+                            <select id="landscapeTreeAbuseIncident" name="landscapeTreeAbuseIncident" class="form-select">
+                                <option value="1">First Incident</option>
+                                <option value="2">Second Incident</option>
+                                <option value="3">Third Incident</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">Calculate Fee</button>
+                    </form>
+                    <div class="results mt-3" id="landscapeResults"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="zoning" class="tab">
+            <div class="card">
+                <div class="card-header">Zoning Permit Fees</div>
+                <div class="card-body">
+                    <form id="zoningPermitForm" onsubmit="calculateZoningFee(); return false;">
+                        <div class="mb-3">
+                            <label for="zoningPermitType" class="form-label">Select Property Type:</label>
+                            <select id="zoningPermitType" name="zoningPermitType" class="form-select">
+                                <option value="singleFamily">Single-Family Home</option>
+                                <option value="multiFamily">Multi-Family Property</option>
+                                <option value="other">All Other Permits</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="zoningSingleFamilyDetails">
+                            <label for="zoningSingleFamilyType" class="form-label">Select Sub-Type:</label>
+                            <select id="zoningSingleFamilyType" name="zoningSingleFamilyType" class="form-select">
+                                <option value="singleFamilyResidential">Single Family Residential</option>
+                                <option value="minorResidential">Minor Residential</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">Calculate Fee</button>
+                    </form>
+                    <div class="results mt-3" id="zoningResults"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="disclaimer" class="text-center mt-4">
+            <i>Disclaimer: The calculation shown is only provided as an estimate.
+			<p />Additional fees may apply.</i>
+            <p /><a href="https://cdn.pompanobeachfl.gov/city/pages/building_inspections/FEE-SCHEDULE.pdf">Click here for the Complete Fee Schedule</a>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabId) {
+            var tabs = document.querySelectorAll('.tab');
+            tabs.forEach(function (tab) {
+                tab.classList.remove('active');
+            });
+            document.getElementById(tabId).classList.add('active');
+            clearResults(); // Clear results when switching tabs
+        }
+
+        function clearResults() {
+            document.querySelectorAll('.results').forEach(function (result) {
+                result.innerText = '';
+            });
+        }
+
+        function validateInputs(inputs) {
+            for (let i = 0; i < inputs.length; i++) {
+                const input = inputs[i];
+                if (input.type === "number" && input.offsetParent !== null) { // Validate only visible inputs
+                    const value = parseFloat(input.value);
+                    if (isNaN(value) || value < 0) {
+                        return {
+                            isValid: false,
+                            errorMessage: "All fields must be filled out with non-negative numbers."
+                        };
+                    }
+                }
+            }
+            return { isValid: true, errorMessage: "" };
+        }
+
+        document.getElementById('buildingPermitType').addEventListener('change', function () {
+            var permitType = this.value;
+            document.getElementById('buildingGeneralDetails').style.display = permitType === 'general' ? 'block' : 'none';
+            document.getElementById('buildingTentDetails').style.display = permitType === 'temporaryTent' ? 'block' : 'none';
+            document.getElementById('buildingPhotovoltaicDetails').style.display = permitType === 'photovoltaic' ? 'block' : 'none';
+            document.getElementById('buildingACDetails').style.display = permitType.includes('ac') ? 'block' : 'none';
+            document.getElementById('buildingRoofingDetails').style.display = permitType === 'roofing' ? 'block' : 'none';
+            document.getElementById('FoudationDetails').style.display = permitType === 'foundationOnly' ? 'block' : 'none';
+
+            clearResults(); // Clear results when changing permit type
+        });
+
+        function calculateBuildingFee() {
+            var permitType = document.getElementById('buildingPermitType').value;
+            var fee = 65; // minimum fee
+            var projectValue = 0; // Initialize Job Value
+            var resultText = '';
+
+            const inputs = [
+                document.getElementById('buildingProjectValue'),
+                document.getElementById('foundationSQFT'),
+                document.getElementById('buildingTentSize'),
+                document.getElementById('buildingTentCount'),
+                document.getElementById('buildingTentValue'),
+                document.getElementById('buildingPhotovoltaicValue'),
+                document.getElementById('buildingSystemSize'),
+                document.getElementById('buildingACTons'),
+                document.getElementById('buildingACValue'),
+                document.getElementById('buildingRoofingValue')
+            ];
+
+            const validation = validateInputs(inputs);
+
+            if (!validation.isValid) {
+                document.getElementById('buildingResults').innerHTML = `<span class="calculation-line text-danger">${validation.errorMessage}</span>`;
+                return;
+            }
+
+            switch (permitType) {
+                case 'general':
+                    projectValue = parseFloat(document.getElementById('buildingProjectValue').value) || 0;
+                    if (projectValue <= 250000) {
+                        fee = Math.max(65, projectValue * 0.025);
+                    } else if (projectValue <= 500000) {
+                        fee = Math.max(65, 6250 + (projectValue - 250000) * 0.024);
+                    } else if (projectValue <= 1000000) {
+                        fee = Math.max(65, 12250 + (projectValue - 500000) * 0.023);
+                    } else if (projectValue <= 5000000) {
+                        fee = Math.max(65, 23750 + (projectValue - 1000000) * 0.022);
+                    } else if (projectValue <= 10000000) {
+                        fee = Math.max(65, 111750 + (projectValue - 5000000) * 0.021);
+                    } else {
+                        fee = Math.max(65, 216750 + (projectValue - 10000000) * 0.02);
+                    }
+                    break;
+                case 'temporaryTent':
+                    var tentSize = parseFloat(document.getElementById('buildingTentSize').value) || 0;
+                    var tentCount = parseInt(document.getElementById('buildingTentCount').value) || 1;
+                    projectValue = parseFloat(document.getElementById('buildingTentValue').value) || 0;
+                    if (tentSize < 120) {
+                        resultText = `<span class="calculation-line">Permits are not required for tents less than 120 SQ FT.</span>`;
+                    } else if (tentSize >= 120 && tentSize < 500) {
+                        fee = Math.max(150 + (tentCount - 1) * 20, projectValue * 0.01);
+                    } else if (tentSize >= 500) {
+                        fee = Math.max(250 + (tentCount - 1) * 20, projectValue * 0.01);
+                    } else {
+                        fee = 0;
+                    }
+                    break;
+                case 'photovoltaic':
+                    var systemSize = parseFloat(document.getElementById('buildingSystemSize').value) || 0;
+                    projectValue = parseFloat(document.getElementById('buildingPhotovoltaicValue').value) || 0;
+                    if (systemSize <= 10) {
+                        fee = 260;
+                    } else {
+                        fee = 260 + (systemSize - 10) * 10;
+                    }
+                    break;
+                case 'roofing':
+                    projectValue = parseFloat(document.getElementById('buildingRoofingValue').value) || 0;
+                    if (projectValue <= 250000) {
+                        fee = Math.max(75, projectValue * 0.025);
+                    } else if (projectValue <= 500000) {
+                        fee = Math.max(75, 6250 + (projectValue - 250000) * 0.024);
+                    } else if (projectValue <= 1000000) {
+                        fee = Math.max(75, 12250 + (projectValue - 500000) * 0.023);
+                    } else if (projectValue <= 5000000) {
+                        fee = Math.max(75, 23750 + (projectValue - 1000000) * 0.022);
+                    } else if (projectValue <= 10000000) {
+                        fee = Math.max(75, 111750 + (projectValue - 5000000) * 0.021);
+                    } else {
+                        fee = Math.max(75, 216750 + (projectValue - 10000000) * 0.02);
+                    }
+                    break;
+                case 'acChangeOut':
+                    var acTons = parseFloat(document.getElementById('buildingACTons').value) || 0;
+                    projectValue = parseFloat(document.getElementById('buildingACValue').value) || 0;
+                    fee = Math.max(65 + (acTons > 4 ? (acTons - 4) * 20 : 0));
+                    break;
+                case 'acFurnaceChangeOut':
+                    var acFurnaceTons = parseFloat(document.getElementById('buildingACTons').value) || 0;
+                    projectValue = parseFloat(document.getElementById('buildingACValue').value) || 0;
+                    fee = Math.max(70 + (acFurnaceTons > 4 ? (acFurnaceTons - 4) * 20 : 0));
+                    break;
+                case 'foundationOnly':
+                    var foundationSQFT = parseFloat(document.getElementById('foundationSQFT').value) || 0;
+                    projectValue = parseFloat(document.getElementById('buildingProjectValue').value) || 0;
+                    fee = Math.max(foundationSQFT * 1);
+                    break;
+            }
+
+            if (permitType !== 'temporaryTent' || tentSize >= 120) {
+                // Calculate surcharges
+                var braSurcharge = Math.max(2, projectValue * 0.52 / 1000);
+                var dbprSurcharge = Math.max(2, fee * 0.01);
+                var dcaSurcharge = Math.max(2, fee * 0.015);
+
+                var totalFee = fee + braSurcharge + dbprSurcharge + dcaSurcharge;
+
+                resultText = `
+                    <div class="fee-results">
+                        <table class="table table-bordered">
+                            <tr>
+                                <th>Fee Type</th>
+                                <th>Amount</th>
+                            </tr>
+                            <tr>
+                                <td>Permit Fee (Base)</td>
+                                <td>$${fee.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</td>
+                            </tr>
+                            <tr>
+                                <td>BRA Surcharge</td>
+                                <td>$${braSurcharge.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</td>
+                            </tr>
+                            <tr>
+                                <td>DBPR Surcharge</td>
+                                <td>$${dbprSurcharge.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</td>
+                            </tr>
+                            <tr>
+                                <td>DCA Surcharge</td>
+                                <td>$${dcaSurcharge.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</td>
+                            </tr>
+                            <tr class="table-active">
+                                <th>Total Permit Fee</th>
+                                <th>$${totalFee.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</th>
+                            </tr>
+                        </table>
+                    </div>
+                `;
+            }
+
+            document.getElementById('buildingResults').innerHTML = resultText;
+        }
+
+        document.getElementById('engineeringPermitType').addEventListener('change', function () {
+            var permitType = this.value;
+            document.getElementById('engineeringCostDetails').style.display = permitType === 'establishingGrades' ? 'none' : 'block';
+            clearResults(); // Clear results when changing permit type
+        });
+
+        function calculateEngineeringFee() {
+            var permitType = document.getElementById('engineeringPermitType').value;
+            var projectValue = parseFloat(document.getElementById('engineeringProjectValue').value) || 0; // Set default to 0 if blank
+            var fee = 40; // minimum fee
+            var resultText = '';
+
+            const inputs = [
+                document.getElementById('engineeringProjectValue')
+            ];
+
+            const validation = validateInputs(inputs);
+
+            if (!validation.isValid) {
+                document.getElementById('engineeringResults').innerHTML = `<span class="calculation-line text-danger">${validation.errorMessage}</span>`;
+                return;
+            }
+
+            switch (permitType) {
+                case 'paving':
+                case 'waterSewer':
+                case 'seawalls':
+                case 'stormSewers':
+                    fee = Math.max(40, projectValue * 0.04);
+                    break;
+                case 'establishingGrades':
+                    fee = 20;
+                    break;
+            }
+
+            resultText = `Estimated Engineering Fee: $${fee.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+            document.getElementById('engineeringResults').innerText = resultText;
+        }
+
+        document.getElementById('firePermitType').addEventListener('change', function () {
+            var permitType = this.value;
+            document.getElementById('fireCostDetails').style.display = (permitType === 'construction' || permitType === 'systems') ? 'block' : 'none';
+            document.getElementById('fireCapacityDetails').style.display = permitType === 'capacity' ? 'block' : 'none';
+            clearResults(); // Clear results when changing permit type
+        });
+
+        function calculateFireFee() {
+            var permitType = document.getElementById('firePermitType').value;
+            var fee = 75; // minimum fee
+            var resultText = '';
+
+            const inputs = [
+                document.getElementById('fireProjectValue'),
+                document.getElementById('fireCapacityPercent')
+            ];
+
+            const validation = validateInputs(inputs);
+
+            if (!validation.isValid) {
+                document.getElementById('fireResults').innerHTML = `<span class="calculation-line text-danger">${validation.errorMessage}</span>`;
+                return;
+            }
+
+            switch (permitType) {
+                case 'capacity':
+                    var capacityPercent = parseFloat(document.getElementById('fireCapacityPercent').value) || 0;
+                    fee = Math.min(Math.max(75, capacityPercent * 10), 500);
+                    break;
+                case 'construction':
+                case 'systems':
+                    var projectValue = parseFloat(document.getElementById('fireProjectValue').value) || 0;
+                    fee = Math.max(100, projectValue * 0.005);
+                    break;
+                case 'miscellaneous':
+                    fee = 100;
+                    break;
+            }
+
+            // Calculate technology fee
+            var technologyFee = fee * 0.02;
+            var totalFee = fee + technologyFee;
+
+            resultText = `
+                <div class="fee-results">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Fee Type</th>
+                            <th>Amount</th>
+                        </tr>
+                        <tr>
+                            <td>Estimated Fire Prevention Fee</td>
+                            <td>$${fee.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</td>
+                        </tr>
+                        <tr>
+                            <td>Technology Fee</td>
+                            <td>$${technologyFee.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</td>
+                        </tr>
+                        <tr class="table-active">
+                            <th>Total Permit Fee</th>
+                            <th>$${totalFee.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</th>
+                        </tr>
+                    </table>
+                </div>
+            `;
+
+            document.getElementById('fireResults').innerHTML = resultText;
+        }
+
+        document.getElementById('landscapePermitType').addEventListener('change', function () {
+            var permitType = this.value;
+            document.getElementById('landscapeTreePermitDetails').style.display = permitType === 'treePermit' ? 'block' : 'none';
+            document.getElementById('landscapeTreeAbuseDetails').style.display = permitType === 'treeAbuse' ? 'block' : 'none';
+            clearResults(); // Clear results when changing permit type
+        });
+
+        function calculateLandscapeFee() {
+            var permitType = document.getElementById('landscapePermitType').value;
+            var fee = 25; // base fee for Tree Permit
+            var resultText = '';
+
+            const inputs = [
+                document.getElementById('landscapeTreeCount'),
+                document.getElementById('landscapeTreeAbuseCount')
+            ];
+
+            const validation = validateInputs(inputs);
+
+            if (!validation.isValid) {
+                document.getElementById('landscapeResults').innerHTML = `<span class="calculation-line text-danger">${validation.errorMessage}</span>`;
+                return;
+            }
+
+            switch (permitType) {
+                case 'treePermit':
+                    var treeType = document.getElementById('landscapeTreeType').value;
+                    var treeCount = parseInt(document.getElementById('landscapeTreeCount').value) || 0;
+                    if (treeCount === 0) {
+                        resultText = `No fees due as the number of trees is 0.`;
+                    } else {
+                        switch (treeType) {
+                            case 'singleFamily':
+                                fee = 25 + (treeCount * 5);
+                                break;
+                            case 'multiFamily':
+                                fee = 45 + (treeCount * 7);
+                                break;
+                            case 'nonResidential':
+                                fee = 50 + (treeCount * 10);
+                                break;
+                        }
+                        resultText = `Estimated Landscape Fee: $${fee.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+                    }
+                    break;
+                case 'treeAbuse':
+                    var abuseCount = parseInt(document.getElementById('landscapeTreeAbuseCount').value) || 0;
+                    var incidentNumber = parseInt(document.getElementById('landscapeTreeAbuseIncident').value) || 1;
+                    if (abuseCount === 0) {
+                        resultText = `No fees due as the number of abused trees is 0.`;
+                    } else {
+                        switch (incidentNumber) {
+                            case 1:
+                                fee = abuseCount * 60;
+                                break;
+                            case 2:
+                                fee = abuseCount * 120;
+                                break;
+                            case 3:
+                                fee = abuseCount * 235;
+                                break;
+                        }
+                        resultText = `Estimated Tree Abuse Fee: $${fee.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+                    }
+                    break;
+            }
+
+            document.getElementById('landscapeResults').innerText = resultText;
+        }
+
+        document.getElementById('zoningPermitType').addEventListener('change', function () {
+            var permitType = this.value;
+            document.getElementById('zoningSingleFamilyDetails').style.display = permitType === 'singleFamily' ? 'block' : 'none';
+            clearResults(); // Clear results when changing permit type
+        });
+
+        function calculateZoningFee() {
+            var permitType = document.getElementById('zoningPermitType').value;
+            var fee = 50; // base fee for Single-Family Residential
+            var resultText = '';
+
+            const inputs = []; // No input fields for Zoning at the moment
+
+            const validation = validateInputs(inputs);
+
+            if (!validation.isValid) {
+                document.getElementById('zoningResults').innerHTML = `<span class="calculation-line text-danger">${validation.errorMessage}</span>`;
+                return;
+            }
+
+            switch (permitType) {
+                case 'singleFamily':
+                    var singleFamilyType = document.getElementById('zoningSingleFamilyType').value;
+                    switch (singleFamilyType) {
+                        case 'singleFamilyResidential':
+                            fee = 50;
+                            break;
+                        case 'minorResidential':
+                            fee = 25;
+                            break;
+                    }
+                    break;
+                case 'multiFamily':
+                    fee = 70;
+                    break;
+                case 'other':
+                    fee = 100;
+                    break;
+            }
+
+            resultText = `Estimated Zoning Fee: $${fee.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+            document.getElementById('zoningResults').innerText = resultText;
+        }
+
+        // Initialize form display
+        document.getElementById('buildingPermitType').dispatchEvent(new Event('change'));
+        document.getElementById('engineeringPermitType').dispatchEvent(new Event('change'));
+        document.getElementById('firePermitType').dispatchEvent(new Event('change'));
+        document.getElementById('landscapePermitType').dispatchEvent(new Event('change'));
+        document.getElementById('zoningPermitType').dispatchEvent(new Event('change'));
+    </script>
+</body>
+
+</html>
