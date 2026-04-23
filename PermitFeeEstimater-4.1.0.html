@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Permit Fee Estimator v4.1.0</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+  <style>
+    body { background: #f5f5f5; }
+	.page-wrap{
+	  padding-left: 25px;
+	  padding-right: 25px;
+	}
+    .tab-content {
+      margin-top: 20px;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: white;
+    }
+    .results { margin-top: 20px; }
+    .footer {
+      margin-top: 30px;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: white;
+      text-align: center;
+    }
+    .form-label { font-weight: bold; }
+    .error { color: #b02a37; font-weight: 600; margin-top: 12px; }
+
+    .table-fixed { table-layout: fixed; width: 100%; }
+    .table-fixed th, .table-fixed td {
+      width: 1%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .result-card {
+      border: 1px solid #d8d8d8;
+      border-radius: 6px;
+      background: #f2f3f5;
+    }
+    .result-card .card-header {
+      font-weight: 700;
+      background: #f2f3f5;
+      border-bottom: 1px solid #d8d8d8;
+    }
+    .result-card .card-body { background: #f2f3f5; }
+    .result-card .table { margin-bottom: 0; background: #fff; }
+    .result-card .table th, .result-card .table td { vertical-align: middle; }
+    .result-footnote { font-size: 0.875rem; margin-top: 0.5rem; }
+	
+  </style>
+</head>
+
+<body>
+  <div class="container-fluid mt-4 page-wrap">
+    <h1 class="text-center mb-2">Estimate Your Permit Fees</h1>
+    <p class="text-center">Select the Division and Permit Type to estimate permit fees.</p>
+
+    <div class="btn-group w-100 mb-4 d-none d-sm-flex" id="divisionButtons" role="group" aria-label="Divisions">
+      <button class="btn btn-primary active" data-division="building" onclick="setDivision('building', this)">Building</button>
+      <button class="btn btn-primary" data-division="engineering" onclick="setDivision('engineering', this)">Engineering</button>
+      <button class="btn btn-primary" data-division="fire" onclick="setDivision('fire', this)">Fire</button>
+      <button class="btn btn-primary" data-division="landscape" onclick="setDivision('landscape', this)">Landscape</button>
+      <button class="btn btn-primary" data-division="zoning" onclick="setDivision('zoning', this)">Zoning</button>
+    </div>
+
+    <div class="input-group mb-4 d-flex d-sm-none">
+      <span class="input-group-text fw-semibold">Division</span>
+      <select id="divisionSelect" class="form-select" onchange="setDivision(this.value)">
+        <option value="building">Building</option>
+        <option value="engineering">Engineering</option>
+        <option value="fire">Fire</option>
+        <option value="landscape">Landscape</option>
+        <option value="zoning">Zoning</option>
+      </select>
+    </div>
+
+    <div id="building" class="tab-content">
+      <h3>Building Permit Fees</h3>
+
+      <label class="form-label">Choose a Permit Type:</label>
+      <select id="buildingType" class="form-select" onchange="toggleBuildingInputs()">
+        <option value="general">Building, Electrical, Mechanical, or Plumbing (General)</option>
+        <option value="roofing">Roofing Permit</option>
+        <option value="ac">Air Conditioner Changeout</option>
+        <option value="foundation">Foundation Only</option>
+        <option value="solar">Photovoltaic System</option>
+        <option value="tent">Temporary Tent</option>
+      </select>
+
+      <br />
+
+      <div id="acTypeContainer" style="display:none;">
+        <label class="form-label" for="acType">A/C Type</label>
+        <select id="acType" class="form-select">
+          <option value="res">Residential</option>
+          <option value="com">Commercial</option>
+        </select>
+        <br />
+      </div>
+
+      <label class="form-label" id="buildingValueLabel">Project Value ($):</label>
+      <input id="buildingValue" class="form-control number-format" type="text" placeholder="Enter Permit Job Value" />
+
+      <div id="generalBuildingNote" class="alert alert-warning mt-3" style="display:none;">
+        <strong>Note:</strong> Estimate each permit type separately (Building, Electrical, Mechanical, Plumbing). Don’t use the total job cost.
+      </div>
+
+      <br />
+
+      <div id="extraInputContainer">
+        <label class="form-label" id="extraInputLabel">Additional Input:</label>
+        <input id="extraInput" class="form-control number-format" type="text" />
+        <small class="text-muted" id="extraInputNote"></small>
+        <br />
+      </div>
+
+      <div id="tentCountContainer" style="display:none;">
+        <label class="form-label" id="tentCountLabel">Number of Tents:</label>
+        <input id="tentCount" class="form-control number-format" type="text" placeholder="Enter number of tents" />
+        <small class="text-muted" id="tentCountNote"></small>
+        <br />
+      </div>
+
+      <div id="solarKwContainer" style="display:none;">
+        <label class="form-label" id="solarKwLabel">System Size (kW):</label>
+        <input id="solarKw" class="form-control number-format" type="text" placeholder="Enter System Size in kW" />
+        <small class="text-muted" id="solarKwNote"></small>
+        <br />
+      </div>
+
+      <button class="btn btn-success w-100" onclick="calculateBuilding()">Calculate</button>
+      <div id="buildingResults" class="results"></div>
+    </div>
+
+    <div id="engineering" class="tab-content" style="display:none">
+      <h3>Engineering Permit Fees</h3>
+
+      <div id="engineeringNote" class="alert alert-warning mt-3" style="display:none;">
+        <strong>NOTE:</strong> An Engineering permit is required for construction, maintenance, or modifications within the Public Right-of-Way, Easement, or Public Property. This includes work on utilities such as water lines, storm drainage, sanitary sewers, and force mains, as well as structural and surface improvements like docks, sidewalks, paving, and roadwork.
+      </div>
+
+      <label class="form-label">Engineering Work Value ($)</label>
+      <input id="engineeringValue" class="form-control number-format" placeholder="Enter Value of Engineering Work" />
+
+      <br />
+
+      <button class="btn btn-success w-100" onclick="calculateEngineering()">Calculate</button>
+      <div id="engineeringResults" class="results"></div>
+    </div>
+
+    <div id="fire" class="tab-content" style="display:none;">
+      <h3>Fire Prevention Permit Fees</h3>
+
+      <form id="fireForm" onsubmit="calculateFireFee(); return false;">
+        <div class="form-section">
+          <label for="fireType" class="form-label">Choose a Fire Permit Type:</label>
+          <select id="fireType" class="form-select" onchange="toggleFireInputs()">
+            <option value="construction">New Construction, Additions, Alterations</option>
+            <option value="alarm">Fire Alarm, Sprinklers, Standpipe Systems</option>
+            <option value="capacity">Capacity-based Systems</option>
+            <option value="misc">Miscellaneous Permits</option>
+          </select>
+        </div>
+
+        <br />
+
+        <div id="fireValueInput" class="form-section">
+          <label for="fireValue" class="form-label">Project Value ($):</label>
+          <input type="text" id="fireValue" class="form-control number-format" placeholder="Enter project value" />
+        </div>
+
+        <div id="fireCapacityInput" class="form-section" style="display:none;">
+          <label for="fireCapacity" class="form-label">Capacity (Number):</label>
+          <input type="text" id="fireCapacity" class="form-control number-format" placeholder="Enter system capacity" />
+        </div>
+
+        <div id="fireMiscInfo" class="form-section" style="display:none;">
+          <p class="text-info mb-0">Miscellaneous permits have a flat base fee of $100.00 (plus technology fee).</p>
+        </div>
+
+        <br />
+
+        <button type="submit" class="btn btn-success w-100">Calculate</button>
+      </form>
+
+      <div id="fireResults" class="results"></div>
+    </div>
+
+    <div id="landscape" class="tab-content" style="display:none">
+      <h3>Landscape Permit Fees</h3>
+
+      <label class="form-label">Permit Type</label>
+      <select id="landscapeType" class="form-select" onchange="toggleLandscape()">
+        <option value="treePermit">Tree Permit</option>
+        <option value="treeAbuse">Tree Abuse</option>
+      </select>
+
+      <br />
+
+      <div id="treePermitInputs">
+        <label class="form-label">Property Type</label>
+        <select id="landscapePropertyType" class="form-select">
+          <option value="single">Single Family / Duplex</option>
+          <option value="multi">Multi Family</option>
+          <option value="commercial">Non Residential</option>
+        </select>
+
+        <br />
+
+        <label class="form-label">Number of Trees</label>
+        <input id="trees" class="form-control number-format" />
+
+        <br />
+
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="withoutPermit" />
+          <label class="form-check-label">Work performed without permit (penalty)</label>
+        </div>
+      </div>
+
+      <div id="treeAbuseInputs" style="display:none">
+        <label class="form-label">Incident Level</label>
+        <select id="incidentType" class="form-select">
+          <option value="first">First Incident</option>
+          <option value="second">Second Incident</option>
+          <option value="third">Third Incident</option>
+        </select>
+
+        <br />
+
+        <label class="form-label">Number of Trees</label>
+        <input id="abusedTrees" class="form-control number-format" />
+      </div>
+
+      <br />
+
+      <button class="btn btn-success w-100" onclick="calculateLandscape()">Calculate</button>
+      <div id="landscapeResults" class="results"></div>
+    </div>
+
+    <div id="zoning" class="tab-content" style="display:none">
+      <h3>Zoning Permit Fees</h3>
+
+      <div id="zoningNote" class="alert alert-warning mt-3" style="display:none;">
+        Zoning fees are based on the total job value; for multiple Building permits, total Zoning may be the sum of “With Zoning Review” Zoning portions.
+      </div>
+
+      <label class="form-label">Project Value ($):</label>
+      <input id="zoningValue" class="form-control number-format" />
+
+      <br />
+
+      <button class="btn btn-success w-100" onclick="calculateZoning()">Calculate</button>
+      <div id="zoningResults" class="results"></div>
+    </div>
+
+    <div class="footer">
+      Disclaimer: These calculations are provided only as an estimate.<br />
+      Additional fees may apply.<br /><br />
+      <a href="https://cdn.pompanobeachfl.gov/city/pages/building_inspections/FEE-SCHEDULE.pdf" target="_blank" rel="noopener">
+        View Complete Fee Schedule
+      </a>
+    </div>
+	  <p>
+	  <div class="text-center text-muted mb-4"><i>Updated: March 12, 2026<br/>Version 4.0.2</i></div>
+  </div>
+
+  <script>
+    function formatCurrency(num) {
+      return "$" + Number(num || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function parseNumber(val) {
+      const v = Number(String(val || "").replace(/,/g, ""));
+      return Number.isFinite(v) ? v : 0;
+    }
+
+    function renderResultCard({ title, bodyHtml, footnoteHtml = "" }) {
+      return `
+        <div class="card result-card">
+          <div class="card-header">${title}</div>
+          <div class="card-body">
+            ${bodyHtml}
+            ${footnoteHtml ? `<div class="result-footnote text-muted">${footnoteHtml}</div>` : ""}
+          </div>
+        </div>
+      `;
+    }
+
+    function setResults(resultsId, title, bodyHtml, footnoteHtml = "") {
+      const el = document.getElementById(resultsId);
+      if (!el) return;
+      el.innerHTML = renderResultCard({ title, bodyHtml, footnoteHtml });
+    }
+
+    function setError(resultsId, title, message) {
+      setResults(resultsId, title, `<p class="error mb-0">${message}</p>`);
+    }
+
+    document.querySelectorAll(".number-format").forEach((el) => {
+      el.addEventListener("input", function () {
+        const raw = String(this.value).replace(/,/g, "");
+        if (raw === "" || raw === "." || raw.endsWith(".")) return;
+        if (raw.includes(".")) {
+          if (isNaN(raw)) return;
+          this.value = raw;
+          return;
+        }
+        if (isNaN(raw)) return;
+        this.value = Number(raw).toLocaleString();
+      });
+    });
+
+    const FeeEngine = {
+      tier(value, tiers) {
+        const v = Number(value);
+        if (!Number.isFinite(v) || v < 0) return 0;
+        for (const t of tiers) {
+          if (v <= t.max) {
+            if (t.flat != null) return t.flat;
+            if (t.base != null) return t.base + (v - t.threshold) * t.rate;
+            return v * t.rate;
+          }
+        }
+        return 0;
+      },
+
+      building(value) {
+        return this.tier(value, [
+          { max: 250000, rate: 0.0275 },
+          { max: 500000, base: 6875, threshold: 250000, rate: 0.0265 },
+          { max: 1000000, base: 13500, threshold: 500000, rate: 0.0255 },
+          { max: 5000000, base: 26250, threshold: 1000000, rate: 0.0245 },
+          { max: 10000000, base: 124250, threshold: 5000000, rate: 0.0235 },
+          { max: Infinity, base: 241750, threshold: 10000000, rate: 0.0225 },
+        ]);
+      },
+
+      buildingWithZoning(value) {
+        return this.tier(value, [
+          { max: 250000, rate: 0.0165 },
+          { max: 500000, base: 4125, threshold: 250000, rate: 0.0155 },
+          { max: 1000000, base: 8000, threshold: 500000, rate: 0.0145 },
+          { max: 5000000, base: 15250, threshold: 1000000, rate: 0.0135 },
+          { max: 10000000, base: 69250, threshold: 5000000, rate: 0.0125 },
+          { max: Infinity, base: 131750, threshold: 10000000, rate: 0.0115 },
+        ]);
+      },
+
+      zoning(value) {
+        return this.tier(value, [
+          { max: 5909, flat: 65 },
+          { max: 250000, rate: 0.011 },
+          { max: 500000, base: 2750, threshold: 250000, rate: 0.01 },
+          { max: 1000000, base: 5250, threshold: 500000, rate: 0.009 },
+          { max: 5000000, base: 9250, threshold: 1000000, rate: 0.008 },
+          { max: 10000000, base: 41750, threshold: 5000000, rate: 0.007 },
+          { max: Infinity, base: 76750, threshold: 10000000, rate: 0.006 },
+        ]);
+      },
+
+      bra(value) {
+        return Math.max(2, value * 0.00052);
+      },
+      dbpr(fee) {
+        return Math.max(2, fee * 0.01);
+      },
+      dca(fee) {
+        return Math.max(2, fee * 0.015);
+      },
+    };
+
+    /* ---------- Building ---------- */
+
+    function calcSolarBasePerTrade(kw) {
+      const kwRounded = Math.ceil(kw);
+      const over = Math.max(0, kwRounded - 10);
+      return 260 + over * 10;
+    }
+
+    function renderTwoColumnFeeTable(rows, totalBuilding, totalElectrical) {
+      const body = rows
+        .map(
+          (r) => `
+          <tr>
+            <td>${r.label}</td>
+            <td>${formatCurrency(r.building)}</td>
+            <td>${formatCurrency(r.electrical)}</td>
+          </tr>
+        `
+        )
+        .join("");
+
+      return `
+        <table class="table table-bordered table-fixed">
+          <tr>
+            <th>Fee Category</th>
+            <th>Building Permit</th>
+            <th>Electrical Permit</th>
+          </tr>
+          ${body}
+          <tr class="table-active">
+            <th>Total Permit Fee</th>
+            <th>${formatCurrency(totalBuilding)}</th>
+            <th>${formatCurrency(totalElectrical)}</th>
+          </tr>
+        </table>
+      `;
+    }
+
+    function calculateBuilding() {
+      const type = document.getElementById("buildingType").value;
+      const buildingJob = parseNumber(document.getElementById("buildingValue").value || "0");
+      const extra = parseNumber(document.getElementById("extraInput").value || "0");
+      const titleMap = {
+        general: "Building Permit Fees (General)",
+        roofing: "Building Permit Fees (Roofing)",
+        ac: "Building Permit Fees (A/C Changeout)",
+        foundation: "Building Permit Fees (Foundation Only)",
+        solar: "Building Permit Fees (Solar)",
+        tent: "Building Permit Fees (Temporary Tents)",
+      };
+      const title = titleMap[type] || "Building Permit Fees";
+
+      if (type === "general" || type === "roofing") {
+        if (buildingJob <= 0) {
+          setError("buildingResults", title, "Please enter a valid Project Value.");
+          return;
+        }
+
+        const minimum = type === "roofing" ? 75 : 65;
+        const buildingOnly = Math.max(minimum, FeeEngine.building(buildingJob));
+        const bra = FeeEngine.bra(buildingJob);
+        const dbprNo = FeeEngine.dbpr(buildingOnly);
+        const dcaNo = FeeEngine.dca(buildingOnly);
+        const totalNo = buildingOnly + bra + dbprNo + dcaNo;
+
+        if (type === "roofing") {
+          const tableHtml = `
+            <table class="table table-bordered table-fixed">
+              <tr><th>Fee Category</th><th>Permit Fees</th></tr>
+              <tr><td>Building Permit Fee</td><td>${formatCurrency(buildingOnly)}</td></tr>
+              <tr><td>BRA Surcharge</td><td>${formatCurrency(bra)}</td></tr>
+              <tr><td>DBPR Surcharge</td><td>${formatCurrency(dbprNo)}</td></tr>
+              <tr><td>DCA Surcharge</td><td>${formatCurrency(dcaNo)}</td></tr>
+              <tr class="table-active"><th>Total</th><th>${formatCurrency(totalNo)}</th></tr>
+            </table>
+          `;
+          setResults("buildingResults", title, tableHtml);
+          return;
+        }
+
+        const buildingWithZoning = Math.max(minimum, FeeEngine.buildingWithZoning(buildingJob));
+        const zoning = FeeEngine.zoning(buildingJob);
+        const dbprYes = FeeEngine.dbpr(buildingWithZoning);
+        const dcaYes = FeeEngine.dca(buildingWithZoning);
+        const totalYes = buildingWithZoning + zoning + bra + dbprYes + dcaYes;
+
+        const tableHtml = `
+          <table class="table table-bordered table-fixed">
+            <tr><th>Fee Category</th><th>No Zoning Review</th><th>With Zoning Review</th></tr>
+            <tr><td>Building Permit Fee</td><td>${formatCurrency(buildingOnly)}</td><td>${formatCurrency(buildingWithZoning)}</td></tr>
+            <tr><td>Zoning Permit Fee</td><td>---</td><td>${formatCurrency(zoning)}</td></tr>
+            <tr><td>BRA Surcharge</td><td>${formatCurrency(bra)}</td><td>${formatCurrency(bra)}</td></tr>
+            <tr><td>DBPR Surcharge</td><td>${formatCurrency(dbprNo)}</td><td>${formatCurrency(dbprYes)}</td></tr>
+            <tr><td>DCA Surcharge</td><td>${formatCurrency(dcaNo)}</td><td>${formatCurrency(dcaYes)}</td></tr>
+            <tr class="table-active"><th>Total</th><th>${formatCurrency(totalNo)}</th><th>${formatCurrency(totalYes)}</th></tr>
+          </table>
+        `;
+        setResults("buildingResults", title, tableHtml);
+        return;
+      }
+
+      if (type === "solar") {
+        const electricalJob = extra;
+        const kw = parseNumber(document.getElementById("solarKw").value || "0");
+
+        if (buildingJob <= 0 || electricalJob <= 0 || kw <= 0) {
+          setError("buildingResults", title, "Please enter valid Building App value, Electrical App value, and System Size (kW).");
+          return;
+        }
+
+        const base = calcSolarBasePerTrade(kw);
+        const braB = FeeEngine.bra(buildingJob);
+        const braE = FeeEngine.bra(electricalJob);
+        const dbprB = FeeEngine.dbpr(base);
+        const dbprE = FeeEngine.dbpr(base);
+        const dcaB = FeeEngine.dca(base);
+        const dcaE = FeeEngine.dca(base);
+        const totalB = base + braB + dbprB + dcaB;
+        const totalE = base + braE + dbprE + dcaE;
+
+        const tableHtml = renderTwoColumnFeeTable(
+          [
+            { label: "Base Permit Fee", building: base, electrical: base },
+            { label: "BRA Surcharge", building: braB, electrical: braE },
+            { label: "DBPR Surcharge", building: dbprB, electrical: dbprE },
+            { label: "DCA Surcharge", building: dcaB, electrical: dcaE },
+          ],
+          totalB,
+          totalE
+        );
+
+        setResults("buildingResults", title, tableHtml);
+        return;
+      }
+
+      if (type === "ac") {
+        const tons = parseNumber(document.getElementById("extraInput").value || "0");
+        const acType = document.getElementById("acType")?.value || "res";
+
+        if (tons <= 0) {
+          setError("buildingResults", title, "Please enter a valid system size (tons).");
+          return;
+        }
+
+        const base = acType === "com" ? 70 : 65;
+        const additionalTons = Math.max(0, Math.ceil(tons - 4));
+        const permit = base + additionalTons * 20;
+
+        const bra = FeeEngine.bra(buildingJob);
+        const dbpr = FeeEngine.dbpr(permit);
+        const dca = FeeEngine.dca(permit);
+        const total = permit + bra + dbpr + dca;
+
+        const tableHtml = `
+          <table class="table table-bordered table-fixed">
+            <tr><td>Permit Fee</td><td>${formatCurrency(permit)}</td></tr>
+            <tr><td>BRA Surcharge</td><td>${formatCurrency(bra)}</td></tr>
+            <tr><td>DBPR Surcharge</td><td>${formatCurrency(dbpr)}</td></tr>
+            <tr><td>DCA Surcharge</td><td>${formatCurrency(dca)}</td></tr>
+            <tr class="table-active"><th>Total</th><th>${formatCurrency(total)}</th></tr>
+          </table>
+        `;
+        setResults("buildingResults", title, tableHtml);
+        return;
+      }
+
+      if (type === "foundation") {
+        const permit = extra * 1;
+        const bra = FeeEngine.bra(buildingJob);
+        const dbpr = FeeEngine.dbpr(permit);
+        const dca = FeeEngine.dca(permit);
+        const total = permit + bra + dbpr + dca;
+
+        const tableHtml = `
+          <table class="table table-bordered table-fixed">
+            <tr><td>Permit Fee</td><td>${formatCurrency(permit)}</td></tr>
+            <tr><td>BRA Surcharge</td><td>${formatCurrency(bra)}</td></tr>
+            <tr><td>DBPR Surcharge</td><td>${formatCurrency(dbpr)}</td></tr>
+            <tr><td>DCA Surcharge</td><td>${formatCurrency(dca)}</td></tr>
+            <tr class="table-active"><th>Total</th><th>${formatCurrency(total)}</th></tr>
+          </table>
+        `;
+        setResults("buildingResults", title, tableHtml);
+        return;
+      }
+
+      if (type === "tent") {
+        const sizeSqFt = extra;
+        const tentCountRaw = document.getElementById("tentCount")?.value || "0";
+        const tentCount = Math.floor(parseNumber(tentCountRaw));
+
+        if (sizeSqFt <= 0) {
+          setError("buildingResults", title, "Please enter a valid tent size (square feet).");
+          return;
+        }
+        if (!Number.isFinite(tentCount) || tentCount <= 0) {
+          setError("buildingResults", title, "Please enter a valid number of tents.");
+          return;
+        }
+
+		if (sizeSqFt <= 120) {
+		  const tableHtml = `
+			<table class="table table-bordered table-fixed">
+			  <tr><td>Permit Requirement</td><td>No permit required for tents up to 120 sq. ft.</td></tr>
+			  <tr class="table-active"><th>Total</th><th>${formatCurrency(0)}</th></tr>
+			</table>
+		  `;
+		  setResults(
+			"buildingResults",
+			title,
+			tableHtml,
+			);
+		  return;
+		}
+
+        const additional = Math.max(0, tentCount - 1);
+        const baseFirst = sizeSqFt < 500 ? 150 : 250;
+        const permit = baseFirst + additional * 20;
+
+        const bra = FeeEngine.bra(buildingJob);
+        const dbpr = FeeEngine.dbpr(permit);
+        const dca = FeeEngine.dca(permit);
+        const total = permit + bra + dbpr + dca;
+
+        const tableHtml = `
+          <table class="table table-bordered table-fixed">
+            <tr><td>Permit Fee</td><td>${formatCurrency(permit)}</td></tr>
+            <tr><td>BRA</td><td>${formatCurrency(bra)}</td></tr>
+            <tr><td>DBPR</td><td>${formatCurrency(dbpr)}</td></tr>
+            <tr><td>DCA</td><td>${formatCurrency(dca)}</td></tr>
+            <tr class="table-active"><th>Total</th><th>${formatCurrency(total)}</th></tr>
+          </table>
+        `;
+        setResults("buildingResults", title, tableHtml);
+        return;
+      }
+
+      setError("buildingResults", title, "Please select a permit type.");
+    }
+
+    function toggleBuildingInputs() {
+      clearAllResults();
+
+      const type = document.getElementById("buildingType").value;
+      const noteEl = document.getElementById("generalBuildingNote");
+      if (noteEl) noteEl.style.display = type === "general" ? "block" : "none";
+
+      const valueLabel = document.getElementById("buildingValueLabel");
+      const label = document.getElementById("extraInputLabel");
+      const note = document.getElementById("extraInputNote");
+      const container = document.getElementById("extraInputContainer");
+      const solarKwContainer = document.getElementById("solarKwContainer");
+      const solarKwNote = document.getElementById("solarKwNote");
+      const acTypeContainer = document.getElementById("acTypeContainer");
+      const tentCountContainer = document.getElementById("tentCountContainer");
+      const tentCountNote = document.getElementById("tentCountNote");
+
+      if (acTypeContainer) acTypeContainer.style.display = type === "ac" ? "block" : "none";
+      if (valueLabel) valueLabel.innerText = "Permit Job Value ($):";
+      container.style.display = "none";
+      if (solarKwContainer) solarKwContainer.style.display = "none";
+      if (tentCountContainer) tentCountContainer.style.display = "none";
+
+      label.innerText = "Additional Input";
+      note.innerText = "";
+      if (solarKwNote) solarKwNote.innerText = "";
+      if (tentCountNote) tentCountNote.innerText = "";
+
+      if (type === "general" || type === "roofing") return;
+
+      container.style.display = "block";
+
+      if (type === "ac") label.innerText = "Unit Tonnage (Tons):";
+      if (type === "foundation") label.innerText = "Foundation Square Footage:";
+      if (type === "solar") {
+        if (valueLabel) valueLabel.innerText = "Building Application Job Value ($)";
+        label.innerText = "Electrical Application Job Value ($):";
+        if (solarKwContainer) solarKwContainer.style.display = "block";
+      }
+      if (type === "tent") {
+        label.innerText = "Tent Size (Square Feet):";
+        if (tentCountContainer) tentCountContainer.style.display = "block";
+        if (tentCountNote) tentCountNote.innerText = "Enter the total number of tents/canopies being permitted.";
+      }
+    }
+
+    /* ---------- Engineering ---------- */
+
+    function calculateEngineering() {
+      const value = parseNumber(document.getElementById("engineeringValue").value || "0");
+      const fee = Math.max(100, value * 0.04);
+
+      const tableHtml = `
+        <table class="table table-bordered table-fixed">
+          <tr><th>Fee Category</th><th>Fee</th></tr>
+          <tr><td>Permit Fee</td><td>${formatCurrency(fee)}</td></tr>
+        </table>
+      `;
+      setResults("engineeringResults", "Engineering Permit Fees", tableHtml);
+    }
+
+    /* ---------- Fire ---------- */
+
+    function toggleFireInputs() {
+      clearAllResults();
+      const type = document.getElementById("fireType").value;
+
+      const valueWrap = document.getElementById("fireValueInput");
+      const capacityWrap = document.getElementById("fireCapacityInput");
+      const miscInfo = document.getElementById("fireMiscInfo");
+
+      valueWrap.style.display = "none";
+      capacityWrap.style.display = "none";
+      miscInfo.style.display = "none";
+
+      if (type === "capacity") {
+        capacityWrap.style.display = "block";
+        return;
+      }
+      if (type === "misc") {
+        miscInfo.style.display = "block";
+        return;
+      }
+      valueWrap.style.display = "block";
+    }
+
+    function calculateFireFee() {
+      const type = document.getElementById("fireType").value;
+      let fee = 0;
+
+      if (type === "capacity") {
+        const raw = document.getElementById("fireCapacity").value || "0";
+        const fireCapacity = Math.floor(parseNumber(raw));
+
+        if (!Number.isFinite(fireCapacity) || fireCapacity <= 0) {
+          setError("fireResults", "Fire Prevention Permit Fees", "Please enter a valid capacity.");
+          return;
+        }
+        fee = fireCapacity * 5;
+      } else if (type === "misc") {
+        fee = 100;
+      } else {
+        const value = parseNumber(document.getElementById("fireValue").value || "0");
+        fee = Math.max(100, value * 0.005);
+      }
+
+      const surcharge = fee * 0.02;
+      const total = fee + surcharge;
+
+      const tableHtml = `
+        <table class="table table-bordered table-fixed">
+          <tr><th>Fee Category</th><th>Fee</th></tr>
+          <tr><td>Permit Fee</td><td>${formatCurrency(fee)}</td></tr>
+          <tr><td>Technology Fee (2%)</td><td>${formatCurrency(surcharge)}</td></tr>
+          <tr class="table-active"><th>Total</th><th>${formatCurrency(total)}</th></tr>
+        </table>
+      `;
+      setResults("fireResults", "Fire Prevention Permit Fees", tableHtml);
+    }
+
+    /* ---------- Landscape ---------- */
+
+    function toggleLandscape() {
+      clearAllResults();
+      const type = document.getElementById("landscapeType").value;
+      document.getElementById("treePermitInputs").style.display = type === "treePermit" ? "block" : "none";
+      document.getElementById("treeAbuseInputs").style.display = type === "treeAbuse" ? "block" : "none";
+    }
+
+    function calculateLandscape() {
+      const type = document.getElementById("landscapeType").value;
+      let fee = 0;
+
+      if (type === "treePermit") {
+        const property = document.getElementById("landscapePropertyType").value;
+        const trees = parseNumber(document.getElementById("trees").value || "0");
+        const penalty = document.getElementById("withoutPermit").checked;
+
+        if (property === "single") fee = 0;
+        if (property === "multi") fee = 60 + trees * 9;
+        if (property === "commercial") fee = 67 + trees * 13;
+        if (penalty) fee *= 2;
+      } else {
+        const trees = parseNumber(document.getElementById("abusedTrees").value || "0");
+        const incident = document.getElementById("incidentType").value;
+
+        if (incident === "first") fee = trees * 80;
+        if (incident === "second") fee = trees * 160;
+        if (incident === "third") fee = trees * 313;
+      }
+
+      const tableHtml = `
+        <table class="table table-bordered table-fixed">
+          <tr><th>Fee Category</th><th>Fee</th></tr>
+          <tr><td>Permit Fee</td><td>${formatCurrency(fee)}</td></tr>
+        </table>
+      `;
+      setResults("landscapeResults", "Landscape Permit Fees", tableHtml);
+    }
+
+    /* ---------- Zoning ---------- */
+
+    function calculateZoning() {
+      const value = parseNumber(document.getElementById("zoningValue").value || "0");
+      const fee = FeeEngine.zoning(value);
+
+      const tableHtml = `
+        <table class="table table-bordered table-fixed">
+          <tr><th>Fee Category</th><th>Permit Fee</th></tr>
+          <tr><td>Zoning Permit Fee</td><td>${formatCurrency(fee)}</td></tr>
+        </table>
+      `;
+
+      const footnote =
+        "Zoning permit fees are based on the total job value. This tab shows an overall estimate for the project. If your project includes multiple Building permits, your total Zoning fees may be the sum of the Zoning portions shown under “With Zoning Review.”";
+
+      setResults("zoningResults", "Zoning Permit Fees", tableHtml, footnote);
+    }
+
+    /* ---------- UI ---------- */
+
+    function clearAllResults() {
+      const ids = ["buildingResults", "engineeringResults", "fireResults", "landscapeResults", "zoningResults"];
+      ids.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = "";
+      });
+    }
+
+    function setDivision(id, btn) {
+      const select = document.getElementById("divisionSelect");
+      if (select && select.value !== id) select.value = id;
+      showDivision(id, btn);
+    }
+
+    function toggleDivisionNotes(activeDivisionId) {
+      const engineeringNote = document.getElementById("engineeringNote");
+      const zoningNote = document.getElementById("zoningNote");
+      if (engineeringNote) engineeringNote.style.display = activeDivisionId === "engineering" ? "block" : "none";
+      if (zoningNote) zoningNote.style.display = activeDivisionId === "zoning" ? "block" : "none";
+    }
+
+    function showDivision(id, btn) {
+      clearAllResults();
+      toggleDivisionNotes(id);
+
+      document.querySelectorAll(".tab-content").forEach((t) => (t.style.display = "none"));
+      const tab = document.getElementById(id);
+      if (tab) tab.style.display = "block";
+
+      document.querySelectorAll("#divisionButtons .btn").forEach((b) => {
+        b.classList.remove("active");
+        b.setAttribute("aria-pressed", "false");
+      });
+
+      const activeBtn = btn || document.querySelector(`#divisionButtons .btn[data-division="${id}"]`);
+      if (activeBtn) {
+        activeBtn.classList.add("active");
+        activeBtn.setAttribute("aria-pressed", "true");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      toggleBuildingInputs();
+      toggleFireInputs();
+
+      const active = document.querySelector('#divisionButtons .btn.active')?.dataset?.division || "building";
+      setDivision(active);
+      toggleDivisionNotes(active);
+    });
+
+    document.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        if (document.getElementById("building").style.display !== "none") calculateBuilding();
+        if (document.getElementById("engineering").style.display !== "none") calculateEngineering();
+        if (document.getElementById("fire").style.display !== "none") calculateFireFee();
+        if (document.getElementById("landscape").style.display !== "none") calculateLandscape();
+        if (document.getElementById("zoning").style.display !== "none") calculateZoning();
+      }
+    });
+  </script>
+</body>
+</html>
