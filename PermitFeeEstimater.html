@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Permit Fee Estimator v4.2.1</title>
+  <title>Permit Fee Estimator v4.5.0</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" />
 
   <style>
@@ -291,6 +291,39 @@
       color: var(--city-muted);
     }
 
+    .private-provider-toggle {
+      margin: 1.25rem 0;
+      border: 1px solid var(--city-border);
+      background: #fafbfc;
+      padding: 0.65rem 0.9rem;
+    }
+
+    .private-provider-toggle[open] {
+      background: #fff;
+    }
+
+    .private-provider-toggle summary {
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--city-blue);
+      letter-spacing: 0.02em;
+    }
+
+    .private-provider-toggle summary:hover,
+    .private-provider-toggle summary:focus {
+      color: var(--city-blue-accent);
+    }
+
+    .private-provider-toggle .private-provider-body {
+      margin-top: 0.85rem;
+    }
+
+    .private-provider-toggle small {
+      display: block;
+      margin-top: 0.4rem;
+    }
+
     .print-divider {
       border-top: 1px solid #000;
       height: 0;
@@ -403,7 +436,8 @@
       .input-group,
       .action-button,
       .footer,
-      .meta-note {
+      .meta-note,
+      .private-provider-toggle {
         display: none !important;
       }
 
@@ -540,6 +574,19 @@
     <div id="building" class="tab-content">
       <h3>Building Permit Fees</h3>
 
+      <details class="private-provider-toggle">
+        <summary>Using a Private Provider?</summary>
+        <div class="private-provider-body">
+          <label class="form-label" for="privateProviderType">Private Provider Service</label>
+          <select id="privateProviderType" class="form-select" onchange="handlePrivateProviderChange()">
+            <option value="none">Not Using a Private Provider (Standard Rates)</option>
+            <option value="inspections">Private Provider &ndash; Inspections Only</option>
+            <option value="planReview">Private Provider &ndash; Plan Review + Inspections</option>
+          </select>
+          <small class="text-muted">Reduced Building permit fee rates apply when a licensed Private Provider performs inspections, or plan review and inspections, in place of the Building Department.</small>
+        </div>
+      </details>
+
       <label class="form-label">Choose a Permit Type:</label>
       <select id="buildingType" class="form-select" onchange="toggleBuildingInputs()">
         <option value="general">Building, Electrical, Mechanical, or Plumbing (General)</option>
@@ -592,7 +639,7 @@
       </div>
 
       <button class="btn action-button" onclick="calculateBuilding()">Calculate</button>
-      <div id="buildingResults" class="results"></div>
+      <div id="buildingResults" class="results" aria-live="polite" aria-atomic="true"></div>
     </div>
 
     <div id="engineering" class="tab-content" style="display:none">
@@ -608,7 +655,7 @@
       <br />
 
       <button class="btn action-button" onclick="calculateEngineering()">Calculate</button>
-      <div id="engineeringResults" class="results"></div>
+      <div id="engineeringResults" class="results" aria-live="polite" aria-atomic="true"></div>
     </div>
 
     <div id="fire" class="tab-content" style="display:none;">
@@ -646,7 +693,7 @@
         <button type="submit" class="btn action-button">Calculate</button>
       </form>
 
-      <div id="fireResults" class="results"></div>
+      <div id="fireResults" class="results" aria-live="polite" aria-atomic="true"></div>
     </div>
 
     <div id="landscape" class="tab-content" style="display:none">
@@ -698,7 +745,7 @@
       <br />
 
       <button class="btn action-button" onclick="calculateLandscape()">Calculate</button>
-      <div id="landscapeResults" class="results"></div>
+      <div id="landscapeResults" class="results" aria-live="polite" aria-atomic="true"></div>
     </div>
 
     <div id="zoning" class="tab-content" style="display:none">
@@ -714,7 +761,7 @@
       <br />
 
       <button class="btn action-button" onclick="calculateZoning()">Calculate</button>
-      <div id="zoningResults" class="results"></div>
+      <div id="zoningResults" class="results" aria-live="polite" aria-atomic="true"></div>
     </div>
 
     <div class="footer">
@@ -724,7 +771,7 @@
         View Complete Fee Schedule
       </a>
     </div>
-      <div class="meta-note"><i>Updated: May 6, 2026<br />Version 4.2.1</i></div>
+      <div class="meta-note"><i>Updated: July 9, 2026<br />Version 4.5.0</i></div>
     </div>
   </div>
   </div>
@@ -762,6 +809,7 @@
     }
 
     document.querySelectorAll(".number-format").forEach((el) => {
+      el.setAttribute("inputmode", "decimal");
       el.addEventListener("input", function () {
         const raw = String(this.value).replace(/,/g, "");
         if (raw === "" || raw === "." || raw.endsWith(".")) return;
@@ -811,6 +859,50 @@
         ]);
       },
 
+      buildingPP(value, mode) {
+        const tiers =
+          mode === "planReview"
+            ? [
+                { max: 250000, rate: 0.01375 },
+                { max: 500000, base: 3437.5, threshold: 250000, rate: 0.01325 },
+                { max: 1000000, base: 6750, threshold: 500000, rate: 0.01275 },
+                { max: 5000000, base: 13125, threshold: 1000000, rate: 0.01225 },
+                { max: 10000000, base: 62125, threshold: 5000000, rate: 0.01175 },
+                { max: Infinity, base: 120875, threshold: 10000000, rate: 0.01125 },
+              ]
+            : [
+                { max: 250000, rate: 0.02062 },
+                { max: 500000, base: 5155, threshold: 250000, rate: 0.01987 },
+                { max: 1000000, base: 10122.5, threshold: 500000, rate: 0.01912 },
+                { max: 5000000, base: 19682.5, threshold: 1000000, rate: 0.01837 },
+                { max: 10000000, base: 93162.5, threshold: 5000000, rate: 0.01762 },
+                { max: Infinity, base: 181262.5, threshold: 10000000, rate: 0.01687 },
+              ];
+        return this.tier(value, tiers);
+      },
+
+      buildingWithZoningPP(value, mode) {
+        const tiers =
+          mode === "planReview"
+            ? [
+                { max: 250000, rate: 0.00825 },
+                { max: 500000, base: 2062.5, threshold: 250000, rate: 0.00775 },
+                { max: 1000000, base: 4000, threshold: 500000, rate: 0.00725 },
+                { max: 5000000, base: 7625, threshold: 1000000, rate: 0.00675 },
+                { max: 10000000, base: 34625, threshold: 5000000, rate: 0.00625 },
+                { max: Infinity, base: 65875, threshold: 10000000, rate: 0.00575 },
+              ]
+            : [
+                { max: 250000, rate: 0.01237 },
+                { max: 500000, base: 3092.5, threshold: 250000, rate: 0.01162 },
+                { max: 1000000, base: 5997.5, threshold: 500000, rate: 0.01087 },
+                { max: 5000000, base: 11432.5, threshold: 1000000, rate: 0.01012 },
+                { max: 10000000, base: 51912.5, threshold: 5000000, rate: 0.00937 },
+                { max: Infinity, base: 98762.5, threshold: 10000000, rate: 0.00862 },
+              ];
+        return this.tier(value, tiers);
+      },
+
       zoning(value) {
         return this.tier(value, [
           { max: 5909, flat: 65 },
@@ -836,10 +928,63 @@
 
     /* ---------- Building ---------- */
 
-    function calcSolarBasePerTrade(kw) {
+    const PRIVATE_PROVIDER_LABELS = {
+      inspections: "Private Provider (Inspections Only)",
+      planReview: "Private Provider (Plan Review + Inspections)",
+    };
+
+    const PRIVATE_PROVIDER_MINIMUMS = {
+      none: { general: 65, roofing: 75 },
+      inspections: { general: 48.75, roofing: 56.25 },
+      planReview: { general: 32.5, roofing: 37.5 },
+    };
+
+    const PRIVATE_PROVIDER_AC_RATES = {
+      none: { res: 65, com: 70, perTon: 20 },
+      inspections: { res: 48.75, com: 52.5, perTon: 15 },
+      planReview: { res: 32.5, com: 35, perTon: 10 },
+    };
+
+    const PRIVATE_PROVIDER_FOUNDATION_RATES = {
+      none: 1.0,
+      inspections: 0.75,
+      planReview: 0.5,
+    };
+
+    const PRIVATE_PROVIDER_SOLAR_RATES = {
+      none: { base: 260, perKw: 10 },
+      inspections: { base: 195, perKw: 7.5 },
+      planReview: { base: 195, perKw: 5 },
+    };
+
+    const PRIVATE_PROVIDER_TENT_RATES = {
+      none: { under500: 150, over500: 250, additional: 20 },
+      inspections: { under500: 112.5, over500: 187.5, additional: 15 },
+      planReview: { under500: 75, over500: 125, additional: 10 },
+    };
+
+    function getPrivateProviderMode() {
+      const el = document.getElementById("privateProviderType");
+      const value = el ? el.value : "none";
+      return value === "inspections" || value === "planReview" ? value : "none";
+    }
+
+    function handlePrivateProviderChange() {
+      const results = document.getElementById("buildingResults");
+      if (results && results.innerHTML.trim() !== "") {
+        calculateBuilding();
+      }
+    }
+
+    function privateProviderFootnote(ppMode) {
+      return ppMode === "none" ? "" : `${PRIVATE_PROVIDER_LABELS[ppMode]} rates applied.`;
+    }
+
+    function calcSolarBasePerTrade(kw, ppMode) {
       const kwRounded = Math.ceil(kw);
       const over = Math.max(0, kwRounded - 10);
-      return 260 + over * 10;
+      const rates = PRIVATE_PROVIDER_SOLAR_RATES[ppMode] || PRIVATE_PROVIDER_SOLAR_RATES.none;
+      return rates.base + over * rates.perKw;
     }
 
     function renderTwoColumnFeeTable(rows, totalBuilding, totalElectrical) {
@@ -876,6 +1021,8 @@
       const type = document.getElementById("buildingType").value;
       const buildingJob = parseNumber(document.getElementById("buildingValue").value || "0");
       const extra = parseNumber(document.getElementById("extraInput").value || "0");
+      const ppMode = getPrivateProviderMode();
+      const ppFootnote = privateProviderFootnote(ppMode);
       const titleMap = {
         general: "Building Permit Fees (General)",
         roofing: "Building Permit Fees (Roofing)",
@@ -892,8 +1039,11 @@
           return;
         }
 
-        const minimum = type === "roofing" ? 75 : 65;
-        const buildingOnly = Math.max(minimum, FeeEngine.building(buildingJob));
+        const minimum = PRIVATE_PROVIDER_MINIMUMS[ppMode][type === "roofing" ? "roofing" : "general"];
+        const buildingOnly = Math.max(
+          minimum,
+          ppMode === "none" ? FeeEngine.building(buildingJob) : FeeEngine.buildingPP(buildingJob, ppMode)
+        );
         const bra = FeeEngine.bra(buildingJob);
         const dbprNo = FeeEngine.dbpr(buildingOnly);
         const dcaNo = FeeEngine.dca(buildingOnly);
@@ -910,11 +1060,14 @@
               <tr class="table-active"><th>Total</th><th>${formatCurrency(totalNo)}</th></tr>
             </table>
           `;
-          setResults("buildingResults", title, tableHtml);
+          setResults("buildingResults", title, tableHtml, ppFootnote);
           return;
         }
 
-        const buildingWithZoning = Math.max(minimum, FeeEngine.buildingWithZoning(buildingJob));
+        const buildingWithZoning = Math.max(
+          minimum,
+          ppMode === "none" ? FeeEngine.buildingWithZoning(buildingJob) : FeeEngine.buildingWithZoningPP(buildingJob, ppMode)
+        );
         const zoning = FeeEngine.zoning(buildingJob);
         const dbprYes = FeeEngine.dbpr(buildingWithZoning);
         const dcaYes = FeeEngine.dca(buildingWithZoning);
@@ -931,7 +1084,7 @@
             <tr class="table-active"><th>Total</th><th>${formatCurrency(totalNo)}</th><th>${formatCurrency(totalYes)}</th></tr>
           </table>
         `;
-        setResults("buildingResults", title, tableHtml);
+        setResults("buildingResults", title, tableHtml, ppFootnote);
         return;
       }
 
@@ -944,7 +1097,7 @@
           return;
         }
 
-        const base = calcSolarBasePerTrade(kw);
+        const base = calcSolarBasePerTrade(kw, ppMode);
         const braB = FeeEngine.bra(buildingJob);
         const braE = FeeEngine.bra(electricalJob);
         const dbprB = FeeEngine.dbpr(base);
@@ -965,7 +1118,7 @@
           totalE
         );
 
-        setResults("buildingResults", title, tableHtml);
+        setResults("buildingResults", title, tableHtml, ppFootnote);
         return;
       }
 
@@ -978,9 +1131,10 @@
           return;
         }
 
-        const base = acType === "com" ? 70 : 65;
+        const acRates = PRIVATE_PROVIDER_AC_RATES[ppMode];
+        const base = acType === "com" ? acRates.com : acRates.res;
         const additionalTons = Math.max(0, Math.ceil(tons - 4));
-        const permit = base + additionalTons * 20;
+        const permit = base + additionalTons * acRates.perTon;
 
         const bra = FeeEngine.bra(buildingJob);
         const dbpr = FeeEngine.dbpr(permit);
@@ -996,12 +1150,17 @@
             <tr class="table-active"><th>Total</th><th>${formatCurrency(total)}</th></tr>
           </table>
         `;
-        setResults("buildingResults", title, tableHtml);
+        setResults("buildingResults", title, tableHtml, ppFootnote);
         return;
       }
 
       if (type === "foundation") {
-        const permit = extra * 1;
+        if (extra <= 0) {
+          setError("buildingResults", title, "Please enter a valid foundation square footage.");
+          return;
+        }
+
+        const permit = extra * PRIVATE_PROVIDER_FOUNDATION_RATES[ppMode];
         const bra = FeeEngine.bra(buildingJob);
         const dbpr = FeeEngine.dbpr(permit);
         const dca = FeeEngine.dca(permit);
@@ -1016,7 +1175,7 @@
             <tr class="table-active"><th>Total</th><th>${formatCurrency(total)}</th></tr>
           </table>
         `;
-        setResults("buildingResults", title, tableHtml);
+        setResults("buildingResults", title, tableHtml, ppFootnote);
         return;
       }
 
@@ -1049,9 +1208,10 @@
 		  return;
 		}
 
+        const tentRates = PRIVATE_PROVIDER_TENT_RATES[ppMode];
         const additional = Math.max(0, tentCount - 1);
-        const baseFirst = sizeSqFt < 500 ? 150 : 250;
-        const permit = baseFirst + additional * 20;
+        const baseFirst = sizeSqFt < 500 ? tentRates.under500 : tentRates.over500;
+        const permit = baseFirst + additional * tentRates.additional;
 
         const bra = FeeEngine.bra(buildingJob);
         const dbpr = FeeEngine.dbpr(permit);
@@ -1067,7 +1227,7 @@
             <tr class="table-active"><th>Total</th><th>${formatCurrency(total)}</th></tr>
           </table>
         `;
-        setResults("buildingResults", title, tableHtml);
+        setResults("buildingResults", title, tableHtml, ppFootnote);
         return;
       }
 
@@ -1263,10 +1423,72 @@
       });
     }
 
+    /* ---------- Deep linking ---------- */
+
+    const DIVISION_IDS = ["building", "engineering", "fire", "landscape", "zoning"];
+    const DIVISION_ALIASES = {
+      building: "building",
+      bldg: "building",
+      engineering: "engineering",
+      eng: "engineering",
+      "right-of-way": "engineering",
+      fire: "fire",
+      "fire-prevention": "fire",
+      fireprevention: "fire",
+      landscape: "landscape",
+      trees: "landscape",
+      zoning: "zoning",
+    };
+
+    function normalizeDivision(raw) {
+      if (!raw) return null;
+      let key;
+      try {
+        key = decodeURIComponent(String(raw)).trim().toLowerCase();
+      } catch (e) {
+        key = String(raw).trim().toLowerCase();
+      }
+      return DIVISION_ALIASES[key] || (DIVISION_IDS.includes(key) ? key : null);
+    }
+
+    function getRequestedDivision() {
+      // 1. Hash on this tool's own URL, e.g. PermitFeeEstimater.html#fire
+      const fromHash = normalizeDivision(window.location.hash.replace(/^#/, ""));
+      if (fromHash) return fromHash;
+
+      // 2. Query string on this tool's own URL, e.g. PermitFeeEstimater.html?division=fire
+      const params = new URLSearchParams(window.location.search);
+      const fromQuery = normalizeDivision(params.get("division") || params.get("tab") || params.get("dept"));
+      if (fromQuery) return fromQuery;
+
+      // 3. Fallback for the iframe case: browsers omit the hash from the Referer header,
+      // but a query string on the embedding page (e.g. ?division=fire) does come through.
+      if (document.referrer) {
+        try {
+          const refParams = new URL(document.referrer).searchParams;
+          const fromReferrer = normalizeDivision(refParams.get("division") || refParams.get("tab") || refParams.get("dept"));
+          if (fromReferrer) return fromReferrer;
+        } catch (e) {
+          /* malformed or inaccessible referrer URL; ignore */
+        }
+      }
+
+      return null;
+    }
+
+    function updateUrlHash(id) {
+      if (!DIVISION_IDS.includes(id) || !window.history || !window.history.replaceState) return;
+      if (window.location.hash.replace(/^#/, "") === id) return;
+      const url = new URL(window.location.href);
+      url.hash = id;
+      window.history.replaceState(null, "", url);
+    }
+
     function setDivision(id, btn) {
       const select = document.getElementById("divisionSelect");
       if (select && select.value !== id) select.value = id;
       showDivision(id, btn);
+      updateUrlHash(id);
     }
 
     function toggleDivisionNotes(activeDivisionId) {
@@ -1300,9 +1522,24 @@
       toggleBuildingInputs();
       toggleFireInputs();
 
-      const active = document.querySelector('#divisionButtons .btn.active')?.dataset?.division || "building";
+      const fallback = document.querySelector('#divisionButtons .btn.active')?.dataset?.division || "building";
+      const active = getRequestedDivision() || fallback;
       setDivision(active);
       toggleDivisionNotes(active);
+    });
+
+    window.addEventListener("hashchange", () => {
+      const requested = normalizeDivision(window.location.hash.replace(/^#/, ""));
+      if (requested) setDivision(requested);
+    });
+
+    // Allows the embedding page to switch tabs directly, e.g.
+    // iframe.contentWindow.postMessage({ division: "fire" }, "*")
+    window.addEventListener("message", (event) => {
+      const data = event.data;
+      if (!data || typeof data !== "object") return;
+      const requested = normalizeDivision(data.division || data.tab);
+      if (requested) setDivision(requested);
     });
 
     document.addEventListener("keypress", function (e) {
@@ -1314,6 +1551,53 @@
         if (document.getElementById("zoning").style.display !== "none") calculateZoning();
       }
     });
+
+    /* ---------- Iframe height sync ---------- */
+    // Reports content height to the embedding page so it can resize the iframe
+    // instead of clipping content or leaving dead space. The embedding page
+    // must opt in with a listener, e.g.:
+    //   window.addEventListener("message", (e) => {
+    //     if (e.data && e.data.source === "permit-fee-estimator" && e.data.type === "resize") {
+    //       iframe.style.height = e.data.height + "px";
+    //     }
+    //   });
+    (function () {
+      if (window.parent === window) return; // not embedded in an iframe
+
+      let pendingTimer = null;
+      function postHeight() {
+        pendingTimer = null;
+        window.parent.postMessage(
+          { source: "permit-fee-estimator", type: "resize", height: document.documentElement.scrollHeight },
+          "*"
+        );
+      }
+      function requestPostHeight() {
+        // Debounced with setTimeout rather than requestAnimationFrame: rAF is
+        // suspended for hidden/background documents (e.g. an iframe scrolled
+        // out of view or in a backgrounded tab), which would silently drop
+        // height updates right when the embedding page needs them.
+        if (pendingTimer) return;
+        pendingTimer = setTimeout(postHeight, 50);
+      }
+
+      // MutationObserver reacts to the actual DOM changes that drive height
+      // (results written into .results, tabs toggling display, the Private
+      // Provider <details> opening/closing) rather than relying on
+      // ResizeObserver's box-model semantics, which don't reliably track
+      // content overflow on document.documentElement/body across browsers.
+      new MutationObserver(requestPostHeight).observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["style", "class", "open"],
+      });
+
+      window.addEventListener("resize", requestPostHeight);
+      window.addEventListener("load", requestPostHeight);
+      document.addEventListener("DOMContentLoaded", requestPostHeight);
+      requestPostHeight();
+    })();
   </script>
 </body>
 </html>
