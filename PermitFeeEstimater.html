@@ -710,15 +710,19 @@
       <div id="treePermitInputs">
         <label class="form-label">Property Type</label>
         <select id="landscapePropertyType" class="form-select">
-          <option value="single">Single Family / Duplex</option>
-          <option value="multi">Multi Family</option>
-          <option value="commercial">Non Residential</option>
+          <option value="single">Single-Family / Duplex (Exempt)</option>
+          <option value="other">All Other Property Types</option>
         </select>
 
         <br />
 
         <label class="form-label">Number of Trees</label>
         <input id="trees" class="form-control number-format" />
+
+        <br />
+
+        <label class="form-label">Total Number of Reviews</label>
+        <input id="treeReviews" class="form-control number-format" value="1" />
 
         <br />
 
@@ -752,11 +756,45 @@
       <h3>Zoning Permit Fees</h3>
 
       <div id="zoningNote" class="alert alert-warning mt-3" style="display:none;">
-        Zoning fees are based on the total job value; for multiple Building permits, total Zoning may be the sum of “With Zoning Review” Zoning portions.
+        Zoning fees are set by the scope of work, not the project value. Enter the total number of reviews for the permit.
       </div>
 
-      <label class="form-label">Project Value ($):</label>
-      <input id="zoningValue" class="form-control number-format" />
+      <label class="form-label">Permit Scope</label>
+      <select id="zoningScope" class="form-select" onchange="toggleZoningInputs()">
+        <optgroup label="Standard Zoning Reviews">
+          <option value="qsNo">Quick Service (No Landscape)</option>
+          <option value="qsYes">Quick Service (With Landscape)</option>
+          <option value="lsNo">Limited Scope (No Landscape)</option>
+          <option value="lsYes">Limited Scope (With Landscape)</option>
+        </optgroup>
+        <optgroup label="Residential Development">
+          <option value="sfAddNo">Single-Family / Duplex Addition (No Landscape)</option>
+          <option value="sfAddYes">Single-Family / Duplex Addition (With Landscape)</option>
+          <option value="newSf">New Single-Family / Duplex (Includes Landscape)</option>
+        </optgroup>
+        <optgroup label="Sitework">
+          <option value="siteSmall">Sitework: Up to 0.49 Acres</option>
+          <option value="siteMed">Sitework: 0.5 to 1.99 Acres</option>
+          <option value="siteLarge">Sitework: 2 Acres or More</option>
+        </optgroup>
+        <optgroup label="Sign Permits">
+          <option value="sign">Sign Permit</option>
+        </optgroup>
+      </select>
+
+      <br />
+
+      <label class="form-label">Total Number of Reviews</label>
+      <input id="zoningReviews" class="form-control number-format" value="1" />
+
+      <div id="zoningSignInputs" style="display:none">
+        <br />
+        <label class="form-label">Number of Signs</label>
+        <input id="zoningSigns" class="form-control number-format" value="1" />
+      </div>
+
+      <br />
+
 
       <br />
 
@@ -771,7 +809,7 @@
         View Complete Fee Schedule
       </a>
     </div>
-      <div class="meta-note"><i>Updated: July 28, 2026<br />Version 4.5.1</i></div>
+      <div class="meta-note"><i>Updated: October 1, 2026<br />Version 5.0.0</i></div>
     </div>
   </div>
   </div>
@@ -901,18 +939,6 @@
                 { max: Infinity, base: 98762.5, threshold: 10000000, rate: 0.00862 },
               ];
         return this.tier(value, tiers);
-      },
-
-      zoning(value) {
-        return this.tier(value, [
-          { max: 5909, flat: 65 },
-          { max: 250000, rate: 0.011 },
-          { max: 500000, base: 2750, threshold: 250000, rate: 0.01 },
-          { max: 1000000, base: 5250, threshold: 500000, rate: 0.009 },
-          { max: 5000000, base: 9250, threshold: 1000000, rate: 0.008 },
-          { max: 10000000, base: 41750, threshold: 5000000, rate: 0.007 },
-          { max: Infinity, base: 76750, threshold: 10000000, rate: 0.006 },
-        ]);
       },
 
       bra(value) {
@@ -1068,23 +1094,23 @@
           minimum,
           ppMode === "none" ? FeeEngine.buildingWithZoning(buildingJob) : FeeEngine.buildingWithZoningPP(buildingJob, ppMode)
         );
-        const zoning = FeeEngine.zoning(buildingJob);
         const dbprYes = FeeEngine.dbpr(buildingWithZoning);
         const dcaYes = FeeEngine.dca(buildingWithZoning);
-        const totalYes = buildingWithZoning + zoning + bra + dbprYes + dcaYes;
+        const totalYes = buildingWithZoning + bra + dbprYes + dcaYes;
 
         const tableHtml = `
           <table class="table table-bordered table-fixed">
             <tr><th>Fee Category</th><th>No Zoning Review</th><th>With Zoning Review</th></tr>
             <tr><td>Building Permit Fee</td><td>${formatCurrency(buildingOnly)}</td><td>${formatCurrency(buildingWithZoning)}</td></tr>
-            <tr><td>Zoning Permit Fee</td><td>---</td><td>${formatCurrency(zoning)}</td></tr>
+            <tr><td>Zoning Permit Fee</td><td>---</td><td>Set by scope; see Zoning tab</td></tr>
             <tr><td>BRA Surcharge</td><td>${formatCurrency(bra)}</td><td>${formatCurrency(bra)}</td></tr>
             <tr><td>DBPR Surcharge</td><td>${formatCurrency(dbprNo)}</td><td>${formatCurrency(dbprYes)}</td></tr>
             <tr><td>DCA Surcharge</td><td>${formatCurrency(dcaNo)}</td><td>${formatCurrency(dcaYes)}</td></tr>
-            <tr class="table-active"><th>Total</th><th>${formatCurrency(totalNo)}</th><th>${formatCurrency(totalYes)}</th></tr>
+            <tr class="table-active"><th>Total</th><th>${formatCurrency(totalNo)}</th><th>${formatCurrency(totalYes)}*</th></tr>
           </table>
         `;
-        setResults("buildingResults", title, tableHtml, ppFootnote);
+        const zoningFootnote = "* Total excludes the Zoning Permit Fee, which is set by scope of work. Go to the Zoning tab and calculate the Zoning fee to get the total with zoning.";
+        setResults("buildingResults", title, tableHtml, [ppFootnote, zoningFootnote].filter(Boolean).join(" "));
         return;
       }
 
@@ -1372,9 +1398,15 @@
         const trees = parseNumber(document.getElementById("trees").value || "0");
         const penalty = document.getElementById("withoutPermit").checked;
 
-        if (property === "single") fee = 0;
-        if (property === "multi") fee = 60 + trees * 9;
-        if (property === "commercial") fee = 67 + trees * 13;
+        const reviews = Math.max(1, Math.floor(parseNumber(document.getElementById("treeReviews").value || "1")));
+
+        if (property === "single") {
+          fee = 0;
+        } else {
+          // The initial fee covers one review and site visit; each additional review and visit repeats the same charge.
+          const perReview = 199 + trees * 20;
+          fee = perReview * reviews;
+        }
         if (penalty) fee *= 2;
       } else {
         const trees = parseNumber(document.getElementById("abusedTrees").value || "0");
@@ -1396,19 +1428,56 @@
 
     /* ---------- Zoning ---------- */
 
-    function calculateZoning() {
-      const value = parseNumber(document.getElementById("zoningValue").value || "0");
-      const fee = FeeEngine.zoning(value);
+    const ZONING_SCOPES = {
+      qsNo: { label: "Quick Service (No Landscape)", initial: 95, additional: 24 },
+      qsYes: { label: "Quick Service (With Landscape)", initial: 455, additional: 39 },
+      lsNo: { label: "Limited Scope (No Landscape)", initial: 423, additional: 106 },
+      lsYes: { label: "Limited Scope (With Landscape)", initial: 2267, additional: 267 },
+      sfAddNo: { label: "Single-Family / Duplex Addition (No Landscape)", initial: 423, additional: 106 },
+      sfAddYes: { label: "Single-Family / Duplex Addition (With Landscape)", initial: 1021, additional: 156 },
+      newSf: { label: "New Single-Family / Duplex (Includes Landscape)", initial: 4882, additional: 921 },
+      siteSmall: { label: "Sitework: Up to 0.49 Acres", initial: 8008, additional: 531, includedReviews: 2 },
+      siteMed: { label: "Sitework: 0.5 to 1.99 Acres", initial: 12012, additional: 797, includedReviews: 2 },
+      siteLarge: { label: "Sitework: 2 Acres or More", initial: 16016, additional: 1063, includedReviews: 2 },
+    };
+    const SIGN_FEES = { base: 254, additionalSign: 63, additionalReview: 63 };
 
+    function toggleZoningInputs() {
+      clearAllResults();
+      const scope = document.getElementById("zoningScope").value;
+      document.getElementById("zoningSignInputs").style.display = scope === "sign" ? "block" : "none";
+    }
+
+    function calculateZoning() {
+      const scope = document.getElementById("zoningScope").value;
+      const reviews = Math.max(1, Math.floor(parseNumber(document.getElementById("zoningReviews").value || "1")));
+      const lines = [];
+
+      if (scope === "sign") {
+        const signs = Math.max(1, Math.floor(parseNumber(document.getElementById("zoningSigns").value || "1")));
+        lines.push(["Base sign permit fee (one sign, one review)", SIGN_FEES.base]);
+        if (signs > 1) lines.push([`Additional signs (${signs - 1} x ${formatCurrency(SIGN_FEES.additionalSign)})`, (signs - 1) * SIGN_FEES.additionalSign]);
+        if (reviews > 1) lines.push([`Additional reviews (${reviews - 1} x ${formatCurrency(SIGN_FEES.additionalReview)})`, (reviews - 1) * SIGN_FEES.additionalReview]);
+      } else {
+        const s = ZONING_SCOPES[scope];
+        const included = s.includedReviews || 1;
+        const additionalReviews = Math.max(0, reviews - included);
+        lines.push([`${s.label} - initial fee`, s.initial]);
+        if (additionalReviews > 0) lines.push([`Additional reviews (${additionalReviews} x ${formatCurrency(s.additional)})`, additionalReviews * s.additional]);
+      }
+
+      const total = lines.reduce((sum, [, amount]) => sum + amount, 0);
+      const rowsHtml = lines.map(([label, amount]) => `<tr><td>${label}</td><td>${formatCurrency(amount)}</td></tr>`).join("");
       const tableHtml = `
         <table class="table table-bordered table-fixed">
-          <tr><th>Fee Category</th><th>Permit Fee</th></tr>
-          <tr><td>Zoning Permit Fee</td><td>${formatCurrency(fee)}</td></tr>
+          <tr><th>Fee Category</th><th>Fee</th></tr>
+          ${rowsHtml}
+          <tr class="table-active"><th>Total Zoning Permit Fee</th><th>${formatCurrency(total)}</th></tr>
         </table>
       `;
 
       const footnote =
-        "Zoning permit fees are based on the total job value. This tab shows an overall estimate for the project. If your project includes multiple Building permits, your total Zoning fees may be the sum of the Zoning portions shown under “With Zoning Review.”";
+        "Zoning fees are set by the scope of work, not the project value. Additional review fees apply to each review beyond those included in the initial fee.";
 
       setResults("zoningResults", "Zoning Permit Fees", tableHtml, footnote);
     }
@@ -1521,6 +1590,7 @@
     document.addEventListener("DOMContentLoaded", () => {
       toggleBuildingInputs();
       toggleFireInputs();
+      toggleZoningInputs();
 
       const fallback = document.querySelector('#divisionButtons .btn.active')?.dataset?.division || "building";
       const active = getRequestedDivision() || fallback;
