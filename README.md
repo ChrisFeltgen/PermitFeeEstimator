@@ -30,6 +30,35 @@ on the parent page, since browsers never send the fragment in the referrer.
 For guaranteed deep linking, set the iframe's `src` directly to one of the
 URLs above, or send `postMessage({ division: "fire" }, "*")` to the iframe.
 
+## Zoning fees (Zoning tab)
+
+Zoning compliance fees are set by the scope of work, not the project value.
+Select the permit scope, then enter the total number of reviews. For Sign
+Permits, also enter the number of signs.
+
+- Quick Service, Limited Scope, Single-Family / Duplex Addition, and New
+  Single-Family / Duplex each have an initial fee and an additional review fee.
+  Additional review fees apply from the second review.
+- Sitework (three acreage tiers) includes the first two reviews; additional
+  review fees apply from the third review.
+- Sign Permit: $254 base fee (one sign, one review), $63 for each additional
+  sign, and $63 for each additional review.
+
+## Tree permit fees (Landscape tab)
+
+- Single-Family / Duplex: exempt from permit fees.
+- All Other Property Types: $199 plus $20 per tree for each review. Enter the
+  total number of reviews.
+- Work performed without a permit doubles the fee.
+- Tree abuse fees: $80, $160, and $313 per tree for first, second, and third
+  incidents.
+
+## Building With Zoning Review (Building tab)
+
+The "With Zoning Review" total does not include the Zoning Permit Fee, because
+zoning is set by scope of work rather than project value. The total is marked
+with an asterisk, and the Zoning tab is used to calculate the zoning fee.
+
 ## Private Provider rates (Building tab)
 
 Building permits (only) qualify for reduced fee rates when the applicant uses
